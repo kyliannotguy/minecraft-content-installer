@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minecraft Content Installer"
+  short_description: "Install and sync Minecraft content safely"
+  default_prompt: "Use $hmcl-content-installer to discover a launcher instance and safely install or sync my Minecraft content."
