@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 from pathlib import Path
 
 import sys
@@ -13,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from minecraft_content import (  # noqa: E402
     ContentError,
     compatibility_report,
+    candidate_roots,
+    clean_name,
     extract_world,
     inspect_archive,
     matches_constraint,
@@ -21,6 +24,21 @@ from minecraft_content import (  # noqa: E402
 
 
 class MinecraftContentTests(unittest.TestCase):
+    def test_windows_roots_and_reserved_names_are_supported(self) -> None:
+        with patch("minecraft_content.platform.system", return_value="Windows"), patch(
+            "minecraft_content.Path.home", return_value=Path("C:/Users/Test")
+        ), patch.dict(
+            "minecraft_content.os.environ",
+            {"APPDATA": "C:/Users/Test/AppData/Roaming", "LOCALAPPDATA": "C:/Users/Test/AppData/Local"},
+            clear=False,
+        ):
+            roots = [str(root).replace("\\", "/") for root in candidate_roots()]
+        self.assertIn("C:/Users/Test/AppData/Roaming/.minecraft", roots)
+        self.assertIn("C:/Users/Test/AppData/Roaming/CurseForge/Minecraft/Instances", roots)
+        self.assertIn("C:/Users/Test/AppData/Local/ModrinthApp", roots)
+        self.assertEqual(clean_name("CON"), "CON_")
+        self.assertEqual(clean_name("bad:name.jar"), "bad name.jar")
+
     def test_safe_parts_rejects_posix_and_windows_traversal(self) -> None:
         self.assertIsNone(safe_parts("../../outside.txt"))
         self.assertIsNone(safe_parts(r"..\outside.txt"))

@@ -30,6 +30,14 @@ MAX_MEMBER_UNCOMPRESSED = 512 * 1024 * 1024
 MAX_METADATA_BYTES = 8 * 1024 * 1024
 SKIP_NAMES = {".DS_Store"}
 SKIP_PREFIXES = ("._",)
+WINDOWS_RESERVED_NAMES = {
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
 WORLD_DIRS = {
     "advancements",
     "data",
@@ -74,7 +82,10 @@ def clean_name(value: str) -> str:
     value = re.sub(r"\u00a7.", "", value)
     value = value.replace("\\", " ")
     value = re.sub(r"[/:*?\"<>|]+", " ", value)
-    value = re.sub(r"\s+", " ", value).strip(" .")
+    value = re.sub(r"\s+", " ", value).strip(" .")[:240].rstrip(" .")
+    stem = value.split(".", 1)[0].casefold()
+    if stem in WINDOWS_RESERVED_NAMES:
+        value = f"{value}_"
     return value or "Minecraft World"
 
 
@@ -527,13 +538,24 @@ def candidate_roots() -> list[Path]:
             app / "ModrinthApp",
             app / "com.modrinth.theseus",
             app / "curseforge/minecraft",
+            app / "curseforge/minecraft/Instances",
             app / "ATLauncher",
             app / "multimc",
         ]
     if system == "Windows":
-        appdata = Path(os.environ.get("APPDATA", home / "AppData/Roaming"))
-        local = Path(os.environ.get("LOCALAPPDATA", home / "AppData/Local"))
-        return [home / "AppData/Roaming/.minecraft", appdata / "PrismLauncher", local / "ModrinthApp", appdata / "ATLauncher"]
+        appdata = Path(os.environ.get("APPDATA") or home / "AppData/Roaming")
+        local = Path(os.environ.get("LOCALAPPDATA") or home / "AppData/Local")
+        return [
+            appdata / ".minecraft",
+            appdata / "HMCL",
+            appdata / "PrismLauncher",
+            appdata / "MultiMC",
+            local / "ModrinthApp",
+            appdata / "ModrinthApp",
+            local / "com.modrinth.theseus",
+            appdata / "CurseForge/Minecraft/Instances",
+            appdata / "ATLauncher",
+        ]
     data = Path(os.environ.get("XDG_DATA_HOME", home / ".local/share"))
     return [home / ".minecraft", data / "PrismLauncher", data / "ModrinthApp", data / "ATLauncher"]
 
@@ -542,7 +564,7 @@ def has_instance_markers(path: Path) -> bool:
     return any(
         (path / marker).is_file()
         for marker in ("instance.cfg", "mmc-pack.json", "minecraftinstance.json", "manifest.json", "modrinth.index.json", "instance.json")
-    ) or (path / "versions").is_dir()
+    ) or (path / "versions").is_dir() or (path / "saves").is_dir()
 
 
 def launcher_name(path: Path) -> str:
@@ -648,7 +670,7 @@ def install_mod(archive: Path, target: Path, minecraft: str | None, loader: str 
     game_dir = resolve_game_dir(target)
     mods_dir = game_dir / "mods"
     mods_dir.mkdir(parents=True, exist_ok=True)
-    destination = mods_dir / archive.name
+    destination = mods_dir / clean_name(archive.name)
     if destination.exists() and not force:
         raise ContentError(f"Mod already exists; use --force to replace it: {destination}")
     shutil.copy2(archive, destination)

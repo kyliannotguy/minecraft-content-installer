@@ -64,4 +64,4 @@ Choose the mode from the request:
 
 ## Local installation notes
 
-The skill is launcher-agnostic. A local machine may still have a known default such as `/Users/renliankun/Desktop/.minecraft`, but that path is only a fallback after discovery. Read [references/launcher-layouts.md](references/launcher-layouts.md) for evidence-based layout detection and [references/compatibility.md](references/compatibility.md) for version/loader decisions.
+The skill is launcher-agnostic and works on macOS, Windows, and Linux. A local machine may still have a known default such as `/Users/renliankun/Desktop/.minecraft`, but that path is only a fallback after discovery. On Windows, use the discovered `%APPDATA%` or `%LOCALAPPDATA%` game directory rather than assuming the macOS path. Read [references/launcher-layouts.md](references/launcher-layouts.md) for evidence-based layout detection and [references/compatibility.md](references/compatibility.md) for version/loader decisions.

@@ -44,6 +44,14 @@ There was no multi-instance map synchronization mode or backup behavior for an e
 
 **Fix:** Require `--replace` for an existing world, reject source symlinks, copy through a temporary tree, and create a timestamped backup before replacement.
 
+### MC-006: Windows path and filename portability
+
+**Severity:** Medium
+
+The previous release documented Windows support but did not enumerate Windows launcher roots or protect world and Mod names from reserved device names such as `CON` and `NUL`.
+
+**Fix:** Discover `%APPDATA%` and `%LOCALAPPDATA%` launcher layouts, normalize Windows-style archive separators, sanitize invalid filename characters, reserve device names, and cap normal destination component length.
+
 ## Residual limitations
 
 - The installer does not execute JARs, scripts, or pack-provided commands. A downloaded world can still contain in-game command blocks or data packs; only open content from a trusted source.
